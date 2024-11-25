@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Google 登入系統</title>
+    <style>
+        #userSection {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        #userPhoto {
+            border-radius: 50%;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #4285f4;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .btn:hover {
+            background-color: #357abd;
+        }
+    </style>
+</head>
+<body>
+    <div id="loginSection" style="text-align: center; margin-top: 50px;">
+        <button class="btn" onclick="googleLogin()">使用 Google 登入</button>
+    </div>
+
+    <div id="userSection" style="display: none;">
+        <h2>會員資料</h2>
+        <img id="userPhoto" width="100">
+        <p>姓名: <span id="userName"></span></p>
+        <p>Email: <span id="userEmail"></span></p>
+        <p>最後登入時間: <span id="lastLogin"></span></p>
+        <button class="btn" onclick="logout()">登出</button>
+    </div>
+
+    <script type="module">
+        // Import the functions you need from the SDKs
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
+        import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged, signOut } 
+        from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
+        import { getDatabase, ref, set, get, child } 
+        from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD035ks3v6o625FBJC5PpkQEbh3aW80W3E",
+            authDomain: "project-5643215706914066472.firebaseapp.com",
+            databaseURL: "https://project-5643215706914066472-default-rtdb.firebaseio.com", // 新增這行
+            projectId: "project-5643215706914066472",
+            storageBucket: "project-5643215706914066472.firebasestorage.app",
+            messagingSenderId: "862517984626",
+            appId: "1:862517984626:web:428a18c79624f1500c71eb",
+            measurementId: "G-LE11DL41DW"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+
+        // 將登入函數掛載到 window 對象
+        window.googleLogin = function() {
+          const provider = new GoogleAuthProvider();
+          signInWithPopup(auth, provider)
+              .then((result) => {
+                  const user = result.user;
+                  saveUserData(user);
+              })
+              .catch((error) => {
+                  console.error("登入錯誤:", error);
+                  alert("登入失敗\n" + 
+                        "錯誤代碼: " + error.code + "\n" +
+                        "錯誤信息: " + error.message + "\n" +
+                        "錯誤詳情: " + JSON.stringify(error));
+              });
+      }
+
+        // 儲存用戶資料
+        function saveUserData(user) {
+            const userData = {
+                name: user.displayName,
+                email: user.email,
+                photoURL: user.photoURL,
+                lastLogin: new Date().toISOString()
+            };
+
+            set(ref(database, 'users/' + user.uid), userData)
+                .then(() => {
+                    console.log("用戶資料已儲存");
+                    showUserData(user);
+                })
+                .catch((error) => {
+                    console.error("儲存錯誤:", error);
+                    alert("資料儲存失敗: " + error.message);
+                });
+        }
+
+        // 登出函數
+        window.logout = function() {
+            signOut(auth).then(() => {
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('userSection').style.display = 'none';
+                console.log("已登出");
+            }).catch((error) => {
+                console.error("登出錯誤:", error);
+                alert("登出失敗: " + error.message);
+            });
+        }
+
+        // 顯示用戶資料
+        function showUserData(user) {
+            get(ref(database, 'users/' + user.uid)).then((snapshot) => {
+                if (snapshot.exists()) {
+                    const userData = snapshot.val();
+                    document.getElementById('userPhoto').src = userData.photoURL;
+                    document.getElementById('userName').textContent = userData.name;
+                    document.getElementById('userEmail').textContent = userData.email;
+                    document.getElementById('lastLogin').textContent = 
+                        new Date(userData.lastLogin).toLocaleString('zh-TW');
+                    
+                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('userSection').style.display = 'block';
+                }
+            }).catch((error) => {
+                console.error("讀取資料錯誤:", error);
+                alert("讀取資料失敗: " + error.message);
+            });
+        }
+
+        // 監聽認證狀態變化
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                showUserData(user);
+            } else {
+                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('userSection').style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
