@@ -68,6 +68,11 @@
             background-color: #357abd;
         }
         
+        .btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
         #userPhoto {
             width: 100px;
             height: 100px;
@@ -94,6 +99,7 @@
             margin: 10px 0;
             padding: 10px;
             border-radius: 5px;
+            display: none;
         }
         
         .success {
@@ -123,7 +129,7 @@
             <div id="loginContent">
                 <h2>歡迎使用會員系統</h2>
                 <p>請使用 Google 帳號登入</p>
-                <button class="btn" onclick="googleLogin('login')">
+                <button class="btn" onclick="handleGoogleAuth('login')" id="loginBtn">
                     使用 Google 帳號登入
                 </button>
             </div>
@@ -131,7 +137,7 @@
             <div id="registerContent" style="display: none;">
                 <h2>註冊新帳號</h2>
                 <p>請使用 Google 帳號註冊</p>
-                <button class="btn" onclick="googleLogin('register')">
+                <button class="btn" onclick="handleGoogleAuth('register')" id="registerBtn">
                     使用 Google 帳號註冊
                 </button>
             </div>
@@ -159,7 +165,7 @@
                 <span id="lastLogin"></span>
             </div>
             <div style="text-align: center; margin-top: 30px;">
-                <button class="btn" onclick="logout()">登出</button>
+                <button class="btn" onclick="handleLogout()" id="logoutBtn">登出</button>
             </div>
         </div>
     </div>
@@ -198,23 +204,19 @@
         const auth = getAuth(app);
         const database = getDatabase(app);
 
-        // 切換分頁函數
+        // 將函數附加到 window 物件
         window.switchTab = function(tab) {
-            document.getElementById('loginTab').classList.remove('active');
-            document.getElementById('registerTab').classList.remove('active');
-            document.getElementById('loginContent').style.display = 'none';
-            document.getElementById('registerContent').style.display = 'none';
+            const loginTab = document.getElementById('loginTab');
+            const registerTab = document.getElementById('registerTab');
+            const loginContent = document.getElementById('loginContent');
+            const registerContent = document.getElementById('registerContent');
 
-            if (tab === 'login') {
-                document.getElementById('loginTab').classList.add('active');
-                document.getElementById('loginContent').style.display = 'block';
-            } else {
-                document.getElementById('registerTab').classList.add('active');
-                document.getElementById('registerContent').style.display = 'block';
-            }
-        }
+            loginTab.classList.toggle('active', tab === 'login');
+            registerTab.classList.toggle('active', tab === 'register');
+            loginContent.style.display = tab === 'login' ? 'block' : 'none';
+            registerContent.style.display = tab === 'register' ? 'block' : 'none';
+        };
 
-        // 顯示狀態訊息
         function showStatus(message, isError = false) {
             const statusDiv = document.getElementById('statusMessage');
             statusDiv.textContent = message;
@@ -225,29 +227,37 @@
             }, 3000);
         }
 
-        // 顯示/隱藏載入動畫
         function toggleLoading(show) {
-            document.getElementById('loadingGif').style.display = show ? 'block' : 'none';
+            const loadingGif = document.getElementById('loadingGif');
+            const loginBtn = document.getElementById('loginBtn');
+            const registerBtn = document.getElementById('registerBtn');
+            
+            loadingGif.style.display = show ? 'block' : 'none';
+            loginBtn.disabled = show;
+            registerBtn.disabled = show;
         }
 
-        // Google 登入函數
-        window.googleLogin = async function(mode) {
+        window.handleGoogleAuth = async function(mode) {
             toggleLoading(true);
             try {
                 const provider = new GoogleAuthProvider();
                 const result = await signInWithPopup(auth, provider);
-                await saveUserData(result.user);
-                showStatus(mode === 'login' ? '登入成功！' : '註冊成功！');
+                
+                if (result.user) {
+                    await saveUserData(result.user);
+                    showStatus(mode === 'login' ? '登入成功！' : '註冊成功！');
+                }
             } catch (error) {
                 console.error("認證錯誤:", error);
                 showStatus('認證失敗: ' + error.message, true);
             } finally {
                 toggleLoading(false);
             }
-        }
+        };
 
-        // 儲存用戶資料
         async function saveUserData(user) {
+            if (!user) return;
+            
             try {
                 const userData = {
                     name: user.displayName,
@@ -256,65 +266,66 @@
                     lastLogin: new Date().toISOString()
                 };
                 
-                await set(ref(database, 'users/' + user.uid), userData);
-                await showUserData(user);
+                const userRef = ref(database, 'users/' + user.uid);
+                await set(userRef, userData);
+                return userData;
             } catch (error) {
                 console.error("儲存資料錯誤:", error);
                 showStatus('儲存資料失敗: ' + error.message, true);
+                throw error;
             }
         }
 
-        // 顯示用戶資料
-        async function showUserData(user) {
-            try {
-                const snapshot = await get(ref(database, 'users/' + user.uid));
-                if (snapshot.exists()) {
-                    const userData = snapshot.val();
-                    document.getElementById('userPhoto').src = userData.photoURL || 'default-avatar.png';
-                    document.getElementById('userName').textContent = userData.name || '未設定';
-                    document.getElementById('userEmail').textContent = userData.email || '未設定';
-                    document.getElementById('lastLogin').textContent = 
-                        new Date(userData.lastLogin).toLocaleString('zh-TW', {
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit'
-                        });
-                    
-                    document.getElementById('authSection').style.display = 'none';
-                    document.getElementById('userSection').style.display = 'block';
+        async function updateUI(user) {
+            const authSection = document.getElementById('authSection');
+            const userSection = document.getElementById('userSection');
+
+            if (user) {
+                try {
+                    const snapshot = await get(ref(database, 'users/' + user.uid));
+                    if (snapshot.exists()) {
+                        const userData = snapshot.val();
+                        
+                        document.getElementById('userPhoto').src = userData.photoURL || 'default-avatar.png';
+                        document.getElementById('userName').textContent = userData.name || '未設定';
+                        document.getElementById('userEmail').textContent = userData.email || '未設定';
+                        document.getElementById('lastLogin').textContent = new Date(userData.lastLogin)
+                            .toLocaleString('zh-TW', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit'
+                            });
+                        
+                        authSection.style.display = 'none';
+                        userSection.style.display = 'block';
+                    }
+                } catch (error) {
+                    console.error("讀取資料錯誤:", error);
+                    showStatus('讀取資料失敗: ' + error.message, true);
                 }
-            } catch (error) {
-                console.error("讀取資料錯誤:", error);
-                showStatus('讀取資料失敗: ' + error.message, true);
+            } else {
+                authSection.style.display = 'block';
+                userSection.style.display = 'none';
             }
         }
 
-        // 登出函數
-        window.logout = async function() {
+        window.handleLogout = async function() {
             try {
                 await signOut(auth);
-                document.getElementById('authSection').style.display = 'block';
-                document.getElementById('userSection').style.display = 'none';
-                // 重置為登入分頁
-                switchTab('login');
                 showStatus('已成功登出！');
+                switchTab('login');
             } catch (error) {
                 console.error("登出錯誤:", error);
                 showStatus('登出失敗: ' + error.message, true);
             }
-        }
+        };
 
         // 監聽認證狀態變化
         onAuthStateChanged(auth, (user) => {
-            if (user) {
-                showUserData(user);
-            } else {
-                document.getElementById('authSection').style.display = 'block';
-                document.getElementById('userSection').style.display = 'none';
-            }
+            updateUI(user);
         });
     </script>
 </body>
