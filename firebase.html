@@ -116,10 +116,23 @@
             display: none;
             margin: 20px auto;
         }
+
+        /* 新增錯誤訊息樣式 */
+        #errorMessage {
+            color: red;
+            margin: 10px 0;
+            padding: 10px;
+            border: 1px solid red;
+            border-radius: 5px;
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 新增錯誤訊息區塊 -->
+        <div id="errorMessage"></div>
+        
         <div id="authSection" class="auth-container">
             <div class="tab-container">
                 <button class="tab active" onclick="switchTab('login')" id="loginTab">登入</button>
@@ -150,7 +163,7 @@
         <div id="userSection" style="display: none;">
             <h2>會員資料</h2>
             <div style="text-align: center;">
-                <img id="userPhoto" alt="會員照片">
+                <img id="userPhoto" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=" alt="會員照片">
             </div>
             <div class="user-info">
                 <label>姓名：</label>
@@ -171,162 +184,194 @@
     </div>
 
     <script type="module">
-        // 導入所需的 Firebase 模組
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js";
-        import { 
-            getAuth, 
-            GoogleAuthProvider, 
-            signInWithPopup, 
-            onAuthStateChanged, 
-            signOut 
-        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js";
-        import { 
-            getDatabase, 
-            ref, 
-            set, 
-            get 
-        } from "https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js";
+        // 初始化時先確認 Firebase SDK 是否載入成功
+        let firebaseInitialized = false;
+        
+        try {
+            // 導入所需的 Firebase 模組
+            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js");
+            const { 
+                getAuth, 
+                GoogleAuthProvider, 
+                signInWithPopup, 
+                onAuthStateChanged, 
+                signOut 
+            } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js");
+            const { 
+                getDatabase, 
+                ref, 
+                set, 
+                get 
+            } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js");
 
-        // Firebase 配置
-        const firebaseConfig = {
-            apiKey: "AIzaSyD035ks3v6o625FBJC5PpkQEbh3aW80W3E",
-            authDomain: "project-5643215706914066472.firebaseapp.com",
-            databaseURL: "https://project-5643215706914066472-default-rtdb.firebaseio.com",
-            projectId: "project-5643215706914066472",
-            storageBucket: "project-5643215706914066472.firebasestorage.app",
-            messagingSenderId: "862517984626",
-            appId: "1:862517984626:web:428a18c79624f1500c71eb",
-            measurementId: "G-LE11DL41DW"
-        };
+            // Firebase 配置
+            const firebaseConfig = {
+                apiKey: "AIzaSyD035ks3v6o625FBJC5PpkQEbh3aW80W3E",
+                authDomain: "project-5643215706914066472.firebaseapp.com",
+                databaseURL: "https://project-5643215706914066472-default-rtdb.firebaseio.com",
+                projectId: "project-5643215706914066472",
+                storageBucket: "project-5643215706914066472.firebasestorage.app",
+                messagingSenderId: "862517984626",
+                appId: "1:862517984626:web:428a18c79624f1500c71eb",
+                measurementId: "G-LE11DL41DW"
+            };
 
-        // 初始化 Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const database = getDatabase(app);
-
-        // 將函數附加到 window 物件
-        window.switchTab = function(tab) {
-            const loginTab = document.getElementById('loginTab');
-            const registerTab = document.getElementById('registerTab');
-            const loginContent = document.getElementById('loginContent');
-            const registerContent = document.getElementById('registerContent');
-
-            loginTab.classList.toggle('active', tab === 'login');
-            registerTab.classList.toggle('active', tab === 'register');
-            loginContent.style.display = tab === 'login' ? 'block' : 'none';
-            registerContent.style.display = tab === 'register' ? 'block' : 'none';
-        };
-
-        function showStatus(message, isError = false) {
-            const statusDiv = document.getElementById('statusMessage');
-            statusDiv.textContent = message;
-            statusDiv.className = 'status-message ' + (isError ? 'error' : 'success');
-            statusDiv.style.display = 'block';
-            setTimeout(() => {
-                statusDiv.style.display = 'none';
-            }, 3000);
-        }
-
-        function toggleLoading(show) {
-            const loadingGif = document.getElementById('loadingGif');
-            const loginBtn = document.getElementById('loginBtn');
-            const registerBtn = document.getElementById('registerBtn');
+            // 初始化 Firebase
+            const app = initializeApp(firebaseConfig);
+            const auth = getAuth(app);
+            const database = getDatabase(app);
             
-            loadingGif.style.display = show ? 'block' : 'none';
-            loginBtn.disabled = show;
-            registerBtn.disabled = show;
-        }
+            firebaseInitialized = true;
 
-        window.handleGoogleAuth = async function(mode) {
-            toggleLoading(true);
-            try {
-                const provider = new GoogleAuthProvider();
-                const result = await signInWithPopup(auth, provider);
+            // 顯示錯誤訊息
+            function showError(message) {
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = message;
+                errorDiv.style.display = 'block';
+                setTimeout(() => {
+                    errorDiv.style.display = 'none';
+                }, 5000);
+            }
+
+            // 顯示狀態訊息
+            function showStatus(message, isError = false) {
+                const statusDiv = document.getElementById('statusMessage');
+                statusDiv.textContent = message;
+                statusDiv.className = 'status-message ' + (isError ? 'error' : 'success');
+                statusDiv.style.display = 'block';
+                setTimeout(() => {
+                    statusDiv.style.display = 'none';
+                }, 3000);
+            }
+
+            // 切換載入動畫
+            function toggleLoading(show) {
+                const loadingGif = document.getElementById('loadingGif');
+                const loginBtn = document.getElementById('loginBtn');
+                const registerBtn = document.getElementById('registerBtn');
                 
-                if (result.user) {
-                    await saveUserData(result.user);
-                    showStatus(mode === 'login' ? '登入成功！' : '註冊成功！');
+                loadingGif.style.display = show ? 'block' : 'none';
+                loginBtn.disabled = show;
+                registerBtn.disabled = show;
+            }
+
+            // 切換頁籤
+            window.switchTab = function(tab) {
+                const loginTab = document.getElementById('loginTab');
+                const registerTab = document.getElementById('registerTab');
+                const loginContent = document.getElementById('loginContent');
+                const registerContent = document.getElementById('registerContent');
+
+                loginTab.classList.toggle('active', tab === 'login');
+                registerTab.classList.toggle('active', tab === 'register');
+                loginContent.style.display = tab === 'login' ? 'block' : 'none';
+                registerContent.style.display = tab === 'register' ? 'block' : 'none';
+            };
+
+            // Google 認證處理
+            window.handleGoogleAuth = async function(mode) {
+                if (!firebaseInitialized) {
+                    showError('Firebase 尚未初始化完成，請稍後再試。');
+                    return;
                 }
-            } catch (error) {
-                console.error("認證錯誤:", error);
-                showStatus('認證失敗: ' + error.message, true);
-            } finally {
-                toggleLoading(false);
-            }
-        };
 
-        async function saveUserData(user) {
-            if (!user) return;
-            
-            try {
-                const userData = {
-                    name: user.displayName,
-                    email: user.email,
-                    photoURL: user.photoURL,
-                    lastLogin: new Date().toISOString()
-                };
-                
-                const userRef = ref(database, 'users/' + user.uid);
-                await set(userRef, userData);
-                return userData;
-            } catch (error) {
-                console.error("儲存資料錯誤:", error);
-                showStatus('儲存資料失敗: ' + error.message, true);
-                throw error;
-            }
-        }
-
-        async function updateUI(user) {
-            const authSection = document.getElementById('authSection');
-            const userSection = document.getElementById('userSection');
-
-            if (user) {
+                toggleLoading(true);
                 try {
-                    const snapshot = await get(ref(database, 'users/' + user.uid));
-                    if (snapshot.exists()) {
-                        const userData = snapshot.val();
-                        
-                        document.getElementById('userPhoto').src = userData.photoURL || 'default-avatar.png';
-                        document.getElementById('userName').textContent = userData.name || '未設定';
-                        document.getElementById('userEmail').textContent = userData.email || '未設定';
-                        document.getElementById('lastLogin').textContent = new Date(userData.lastLogin)
-                            .toLocaleString('zh-TW', {
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit'
-                            });
-                        
-                        authSection.style.display = 'none';
-                        userSection.style.display = 'block';
+                    const provider = new GoogleAuthProvider();
+                    const result = await signInWithPopup(auth, provider);
+                    
+                    if (result.user) {
+                        await saveUserData(result.user);
+                        showStatus(mode === 'login' ? '登入成功！' : '註冊成功！');
                     }
                 } catch (error) {
-                    console.error("讀取資料錯誤:", error);
-                    showStatus('讀取資料失敗: ' + error.message, true);
+                    console.error("認證錯誤:", error);
+                    showStatus('認證失敗: ' + error.message, true);
+                } finally {
+                    toggleLoading(false);
                 }
-            } else {
-                authSection.style.display = 'block';
-                userSection.style.display = 'none';
+            };
+
+            // 儲存使用者資料
+            async function saveUserData(user) {
+                if (!user) return;
+                
+                try {
+                    const userData = {
+                        name: user.displayName,
+                        email: user.email,
+                        photoURL: user.photoURL,
+                        lastLogin: new Date().toISOString()
+                    };
+                    
+                    const userRef = ref(database, 'users/' + user.uid);
+                    await set(userRef, userData);
+                    return userData;
+                } catch (error) {
+                    console.error("儲存資料錯誤:", error);
+                    showStatus('儲存資料失敗: ' + error.message, true);
+                    throw error;
+                }
             }
+
+            // 更新使用者介面
+            async function updateUI(user) {
+                const authSection = document.getElementById('authSection');
+                const userSection = document.getElementById('userSection');
+
+                if (user) {
+                    try {
+                        const snapshot = await get(ref(database, 'users/' + user.uid));
+                        if (snapshot.exists()) {
+                            const userData = snapshot.val();
+                            
+                            document.getElementById('userPhoto').src = userData.photoURL || 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+                            document.getElementById('userName').textContent = userData.name || '未設定';
+                            document.getElementById('userEmail').textContent = userData.email || '未設定';
+                            document.getElementById('lastLogin').textContent = new Date(userData.lastLogin)
+                                .toLocaleString('zh-TW', {
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit'
+                                });
+                            
+                            authSection.style.display = 'none';
+                            userSection.style.display = 'block';
+                        }
+                    } catch (error) {
+                        console.error("讀取資料錯誤:", error);
+                        showStatus('讀取資料失敗: ' + error.message, true);
+                    }
+                } else {
+                    authSection.style.display = 'block';
+                    userSection.style.display = 'none';
+                }
+            }
+
+            // 登出處理
+            window.handleLogout = async function() {
+                try {
+                    await signOut(auth);
+                    showStatus('已成功登出！');
+                    switchTab('login');
+                } catch (error) {
+                    console.error("登出錯誤:", error);
+                    showStatus('登出失敗: ' + error.message, true);
+                }
+            };
+
+            // 監聽認證狀態變化
+            onAuthStateChanged(auth, (user) => {
+                updateUI(user);
+            });
+
+        } catch (error) {
+            console.error("Firebase 初始化錯誤:", error);
+            showError('系統初始化失敗，請重新整理頁面或稍後再試。');
         }
-
-        window.handleLogout = async function() {
-            try {
-                await signOut(auth);
-                showStatus('已成功登出！');
-                switchTab('login');
-            } catch (error) {
-                console.error("登出錯誤:", error);
-                showStatus('登出失敗: ' + error.message, true);
-            }
-        };
-
-        // 監聽認證狀態變化
-        onAuthStateChanged(auth, (user) => {
-            updateUI(user);
-        });
     </script>
 </body>
 </html>
