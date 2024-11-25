@@ -16,7 +16,7 @@
             text-align: center;
         }
         
-        #loginSection {
+        .auth-container {
             background: white;
             padding: 40px;
             border-radius: 10px;
@@ -32,6 +32,25 @@
             text-align: left;
         }
         
+        .tab-container {
+            display: flex;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 16px;
+        }
+        
+        .tab.active {
+            border-bottom: 2px solid #4285f4;
+            color: #4285f4;
+        }
+        
         .btn {
             background-color: #4285f4;
             color: white;
@@ -41,6 +60,8 @@
             cursor: pointer;
             font-size: 16px;
             transition: background-color 0.3s;
+            width: 100%;
+            max-width: 300px;
         }
         
         .btn:hover {
@@ -93,12 +114,28 @@
 </head>
 <body>
     <div class="container">
-        <div id="loginSection">
-            <h2>歡迎使用會員系統</h2>
-            <p>請使用 Google 帳號登入或註冊</p>
-            <button class="btn" onclick="googleLogin()">
-                使用 Google 帳號登入/註冊
-            </button>
+        <div id="authSection" class="auth-container">
+            <div class="tab-container">
+                <button class="tab active" onclick="switchTab('login')" id="loginTab">登入</button>
+                <button class="tab" onclick="switchTab('register')" id="registerTab">註冊</button>
+            </div>
+            
+            <div id="loginContent">
+                <h2>歡迎使用會員系統</h2>
+                <p>請使用 Google 帳號登入</p>
+                <button class="btn" onclick="googleLogin('login')">
+                    使用 Google 帳號登入
+                </button>
+            </div>
+            
+            <div id="registerContent" style="display: none;">
+                <h2>註冊新帳號</h2>
+                <p>請使用 Google 帳號註冊</p>
+                <button class="btn" onclick="googleLogin('register')">
+                    使用 Google 帳號註冊
+                </button>
+            </div>
+            
             <div id="statusMessage" class="status-message"></div>
             <img src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" 
                  class="loading" id="loadingGif" alt="loading">
@@ -161,6 +198,22 @@
         const auth = getAuth(app);
         const database = getDatabase(app);
 
+        // 切換分頁函數
+        window.switchTab = function(tab) {
+            document.getElementById('loginTab').classList.remove('active');
+            document.getElementById('registerTab').classList.remove('active');
+            document.getElementById('loginContent').style.display = 'none';
+            document.getElementById('registerContent').style.display = 'none';
+
+            if (tab === 'login') {
+                document.getElementById('loginTab').classList.add('active');
+                document.getElementById('loginContent').style.display = 'block';
+            } else {
+                document.getElementById('registerTab').classList.add('active');
+                document.getElementById('registerContent').style.display = 'block';
+            }
+        }
+
         // 顯示狀態訊息
         function showStatus(message, isError = false) {
             const statusDiv = document.getElementById('statusMessage');
@@ -178,16 +231,16 @@
         }
 
         // Google 登入函數
-        window.googleLogin = async function() {
+        window.googleLogin = async function(mode) {
             toggleLoading(true);
             try {
                 const provider = new GoogleAuthProvider();
                 const result = await signInWithPopup(auth, provider);
                 await saveUserData(result.user);
-                showStatus('登入成功！');
+                showStatus(mode === 'login' ? '登入成功！' : '註冊成功！');
             } catch (error) {
-                console.error("登入錯誤:", error);
-                showStatus('登入失敗: ' + error.message, true);
+                console.error("認證錯誤:", error);
+                showStatus('認證失敗: ' + error.message, true);
             } finally {
                 toggleLoading(false);
             }
@@ -230,7 +283,7 @@
                             second: '2-digit'
                         });
                     
-                    document.getElementById('loginSection').style.display = 'none';
+                    document.getElementById('authSection').style.display = 'none';
                     document.getElementById('userSection').style.display = 'block';
                 }
             } catch (error) {
@@ -243,8 +296,10 @@
         window.logout = async function() {
             try {
                 await signOut(auth);
-                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('authSection').style.display = 'block';
                 document.getElementById('userSection').style.display = 'none';
+                // 重置為登入分頁
+                switchTab('login');
                 showStatus('已成功登出！');
             } catch (error) {
                 console.error("登出錯誤:", error);
@@ -257,7 +312,7 @@
             if (user) {
                 showUserData(user);
             } else {
-                document.getElementById('loginSection').style.display = 'block';
+                document.getElementById('authSection').style.display = 'block';
                 document.getElementById('userSection').style.display = 'none';
             }
         });
