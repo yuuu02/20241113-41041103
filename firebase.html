@@ -10,7 +10,7 @@
             background-color: #f0f2f5;
         }
         .container {
-            max-width: 400px;
+            max-width: 600px;
             margin: 40px auto;
             padding: 20px;
             background: white;
@@ -27,6 +27,10 @@
             font-size: 16px;
             width: 100%;
             margin: 10px 0;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #357abd;
         }
         .loading {
             display: none;
@@ -47,14 +51,59 @@
         }
         #userInfo {
             display: none;
-            margin-top: 20px;
+        }
+        .profile-section {
+            text-align: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #eee;
+            margin-bottom: 20px;
         }
         #userPhoto {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             margin: 10px auto;
             display: block;
+            border: 3px solid #4285f4;
+            object-fit: cover;
+        }
+        .user-details {
+            margin: 20px 0;
+        }
+        .detail-item {
+            display: flex;
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+        }
+        .detail-label {
+            font-weight: bold;
+            width: 150px;
+            color: #666;
+        }
+        .detail-value {
+            flex: 1;
+        }
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin: 20px 0;
+        }
+        .stat-box {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stat-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4285f4;
+        }
+        .stat-label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
         }
     </style>
 </head>
@@ -72,9 +121,37 @@
 
         <!-- 會員資料區塊 -->
         <div id="userInfo">
-            <img id="userPhoto" alt="會員照片">
-            <h3 id="userName"></h3>
-            <p id="userEmail"></p>
+            <div class="profile-section">
+                <img id="userPhoto" alt="會員照片">
+                <h2 id="userName"></h2>
+            </div>
+
+            <div class="user-details">
+                <div class="detail-item">
+                    <div class="detail-label">Email</div>
+                    <div class="detail-value" id="userEmail"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">註冊時間</div>
+                    <div class="detail-value" id="registerTime"></div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">上次登入</div>
+                    <div class="detail-value" id="lastLoginTime"></div>
+                </div>
+            </div>
+
+            <div class="stats-container">
+                <div class="stat-box">
+                    <div class="stat-value" id="loginCount">0</div>
+                    <div class="stat-label">登入次數</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="daysRegistered">0</div>
+                    <div class="stat-label">註冊天數</div>
+                </div>
+            </div>
+
             <button id="logoutBtn" class="btn">登出</button>
         </div>
     </div>
@@ -90,6 +167,13 @@
                 onAuthStateChanged,
                 signOut
             } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js");
+            const {
+                getDatabase,
+                ref,
+                set,
+                get,
+                update
+            } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js");
 
             // Firebase 配置
             const firebaseConfig = {
@@ -105,6 +189,7 @@
             // 初始化 Firebase
             const app = initializeApp(firebaseConfig);
             const auth = getAuth(app);
+            const database = getDatabase(app);
 
             // 取得 DOM 元素
             const messageBox = document.getElementById('messageBox');
@@ -126,6 +211,67 @@
             function toggleLoading(show) {
                 loadingGif.style.display = show ? 'block' : 'none';
                 googleLoginBtn.disabled = show;
+            }
+
+            // 計算註冊天數
+            function calculateDaysRegistered(registerDate) {
+                const now = new Date();
+                const registered = new Date(registerDate);
+                const diffTime = Math.abs(now - registered);
+                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+            }
+
+            // 更新用戶資料到資料庫
+            async function updateUserData(user, isNewLogin = true) {
+                const userRef = ref(database, 'users/' + user.uid);
+                try {
+                    // 檢查用戶是否存在
+                    const snapshot = await get(userRef);
+                    const currentTime = new Date().toISOString();
+                    
+                    if (snapshot.exists()) {
+                        // 更新現有用戶資料
+                        const userData = snapshot.val();
+                        await update(userRef, {
+                            lastLogin: currentTime,
+                            loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
+                        });
+                        return {
+                            ...userData,
+                            lastLogin: currentTime,
+                            loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
+                        };
+                    } else {
+                        // 創建新用戶資料
+                        const newUserData = {
+                            name: user.displayName,
+                            email: user.email,
+                            photoURL: user.photoURL,
+                            registerTime: currentTime,
+                            lastLogin: currentTime,
+                            loginCount: 1
+                        };
+                        await set(userRef, newUserData);
+                        return newUserData;
+                    }
+                } catch (error) {
+                    console.error('更新用戶資料錯誤:', error);
+                    throw error;
+                }
+            }
+
+            // 更新UI顯示
+            function updateUIWithUserData(userData) {
+                document.getElementById('userName').textContent = userData.name;
+                document.getElementById('userEmail').textContent = userData.email;
+                document.getElementById('userPhoto').src = userData.photoURL;
+                document.getElementById('registerTime').textContent = new Date(userData.registerTime)
+                    .toLocaleString('zh-TW');
+                document.getElementById('lastLoginTime').textContent = new Date(userData.lastLogin)
+                    .toLocaleString('zh-TW');
+                document.getElementById('loginCount').textContent = userData.loginCount;
+                document.getElementById('daysRegistered').textContent = 
+                    calculateDaysRegistered(userData.registerTime);
             }
 
             // Google 登入
@@ -154,18 +300,17 @@
             });
 
             // 監聽認證狀態
-            onAuthStateChanged(auth, (user) => {
+            onAuthStateChanged(auth, async (user) => {
                 if (user) {
-                    // 更新會員資料
-                    document.getElementById('userName').textContent = user.displayName;
-                    document.getElementById('userEmail').textContent = user.email;
-                    document.getElementById('userPhoto').src = user.photoURL;
-                    
-                    // 顯示會員區塊
-                    loginSection.style.display = 'none';
-                    userInfo.style.display = 'block';
+                    try {
+                        const userData = await updateUserData(user);
+                        updateUIWithUserData(userData);
+                        loginSection.style.display = 'none';
+                        userInfo.style.display = 'block';
+                    } catch (error) {
+                        showMessage('載入用戶資料失敗：' + error.message, true);
+                    }
                 } else {
-                    // 顯示登入區塊
                     loginSection.style.display = 'block';
                     userInfo.style.display = 'none';
                 }
