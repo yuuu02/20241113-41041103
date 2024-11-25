@@ -108,220 +108,218 @@
     </style>
 </head>
 <body>
-    <div class="container">
-        <div id="messageBox" class="message" style="display: none;"></div>
-        
-        <!-- 登入區塊 -->
-        <div id="loginSection">
-            <h2>會員系統</h2>
-            <button id="googleLoginBtn" class="btn">使用 Google 帳號登入</button>
-            <img src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" 
-                 class="loading" id="loadingGif" alt="loading">
-        </div>
+  <div class="container">
+      <div id="messageBox" class="message" style="display: none;"></div>
+      
+      <div id="loginSection">
+          <h2>會員系統</h2>
+          <button id="googleLoginBtn" class="btn">使用 Google 帳號登入</button>
+          <img src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" 
+               class="loading" id="loadingGif" alt="loading">
+      </div>
 
-        <!-- 會員資料區塊 -->
-        <div id="userInfo">
-            <div class="profile-section">
-                <img id="userPhoto" alt="會員照片">
-                <h2 id="userName"></h2>
-            </div>
+      <div id="userInfo" style="display: none;">
+          <div class="profile-section">
+              <img id="userPhoto" alt="會員照片">
+              <h2 id="userName"></h2>
+          </div>
 
-            <div class="user-details">
-                <div class="detail-item">
-                    <div class="detail-label">Email</div>
-                    <div class="detail-value" id="userEmail"></div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">註冊時間</div>
-                    <div class="detail-value" id="registerTime"></div>
-                </div>
-                <div class="detail-item">
-                    <div class="detail-label">上次登入</div>
-                    <div class="detail-value" id="lastLoginTime"></div>
-                </div>
-            </div>
+          <div class="user-details">
+              <div class="detail-item">
+                  <div class="detail-label">Email</div>
+                  <div class="detail-value" id="userEmail"></div>
+              </div>
+              <div class="detail-item">
+                  <div class="detail-label">註冊時間</div>
+                  <div class="detail-value" id="registerTime"></div>
+              </div>
+              <div class="detail-item">
+                  <div class="detail-label">最後登入</div>
+                  <div class="detail-value" id="lastLoginTime"></div>
+              </div>
+          </div>
 
-            <div class="stats-container">
-                <div class="stat-box">
-                    <div class="stat-value" id="loginCount">0</div>
-                    <div class="stat-label">登入次數</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-value" id="daysRegistered">0</div>
-                    <div class="stat-label">註冊天數</div>
-                </div>
-            </div>
+          <div class="stats-container">
+              <div class="stat-box">
+                  <div class="stat-value" id="loginCount">0</div>
+                  <div class="stat-label">登入次數</div>
+              </div>
+              <div class="stat-box">
+                  <div class="stat-value" id="daysRegistered">0</div>
+                  <div class="stat-label">註冊天數</div>
+              </div>
+          </div>
 
-            <button id="logoutBtn" class="btn">登出</button>
-        </div>
-    </div>
+          <button id="logoutBtn" class="btn">登出</button>
+      </div>
+  </div>
 
-    <script type="module">
-        try {
-            // 導入 Firebase 模組
-            const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js");
-            const { 
-                getAuth, 
-                GoogleAuthProvider, 
-                signInWithPopup,
-                onAuthStateChanged,
-                signOut
-            } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js");
-            const {
-                getDatabase,
-                ref,
-                set,
-                get,
-                update
-            } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js");
+  <script type="module">
+      try {
+          // 導入 Firebase 模組
+          const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js");
+          const { 
+              getAuth, 
+              GoogleAuthProvider, 
+              signInWithPopup,
+              onAuthStateChanged,
+              signOut
+          } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js");
+          const {
+              getDatabase,
+              ref,
+              set,
+              get,
+              update
+          } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js");
 
-            // Firebase 配置
-            const firebaseConfig = {
-                apiKey: "AIzaSyD035ks3v6o625FBJC5PpkQEbh3aW80W3E",
-                authDomain: "project-5643215706914066472.firebaseapp.com",
-                databaseURL: "https://project-5643215706914066472-default-rtdb.firebaseio.com",
-                projectId: "project-5643215706914066472",
-                storageBucket: "project-5643215706914066472.firebasestorage.app",
-                messagingSenderId: "862517984626",
-                appId: "1:862517984626:web:428a18c79624f1500c71eb"
-            };
+          // Firebase 配置
+          const firebaseConfig = {
+              apiKey: "AIzaSyD035ks3v6o625FBJC5PpkQEbh3aW80W3E",
+              authDomain: "project-5643215706914066472.firebaseapp.com",
+              databaseURL: "https://project-5643215706914066472-default-rtdb.firebaseio.com",
+              projectId: "project-5643215706914066472",
+              storageBucket: "project-5643215706914066472.firebasestorage.app",
+              messagingSenderId: "862517984626",
+              appId: "1:862517984626:web:428a18c79624f1500c71eb"
+          };
 
-            // 初始化 Firebase
-            const app = initializeApp(firebaseConfig);
-            const auth = getAuth(app);
-            const database = getDatabase(app);
+          // 初始化 Firebase
+          const app = initializeApp(firebaseConfig);
+          const auth = getAuth(app);
+          const database = getDatabase(app);
 
-            // 取得 DOM 元素
-            const messageBox = document.getElementById('messageBox');
-            const loadingGif = document.getElementById('loadingGif');
-            const loginSection = document.getElementById('loginSection');
-            const userInfo = document.getElementById('userInfo');
-            const googleLoginBtn = document.getElementById('googleLoginBtn');
-            const logoutBtn = document.getElementById('logoutBtn');
+          // 取得 DOM 元素
+          const messageBox = document.getElementById('messageBox');
+          const loadingGif = document.getElementById('loadingGif');
+          const loginSection = document.getElementById('loginSection');
+          const userInfo = document.getElementById('userInfo');
+          const googleLoginBtn = document.getElementById('googleLoginBtn');
+          const logoutBtn = document.getElementById('logoutBtn');
 
-            // 顯示訊息函數
-            function showMessage(message, isError = false) {
-                messageBox.textContent = message;
-                messageBox.className = `message ${isError ? 'error' : 'success'}`;
-                messageBox.style.display = 'block';
-                setTimeout(() => messageBox.style.display = 'none', 3000);
-            }
+          // 顯示訊息函數
+          function showMessage(message, isError = false) {
+              messageBox.textContent = message;
+              messageBox.className = `message ${isError ? 'error' : 'success'}`;
+              messageBox.style.display = 'block';
+              setTimeout(() => messageBox.style.display = 'none', 3000);
+          }
 
-            // 切換載入狀態
-            function toggleLoading(show) {
-                loadingGif.style.display = show ? 'block' : 'none';
-                googleLoginBtn.disabled = show;
-            }
+          // 切換載入狀態
+          function toggleLoading(show) {
+              loadingGif.style.display = show ? 'block' : 'none';
+              googleLoginBtn.disabled = show;
+          }
 
-            // 計算註冊天數
-            function calculateDaysRegistered(registerDate) {
-                const now = new Date();
-                const registered = new Date(registerDate);
-                const diffTime = Math.abs(now - registered);
-                return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            }
+          // 計算註冊天數
+          function calculateDaysRegistered(registerDate) {
+              const now = new Date();
+              const registered = new Date(registerDate);
+              const diffTime = Math.abs(now - registered);
+              return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+          }
 
-            // 更新用戶資料到資料庫
-            async function updateUserData(user, isNewLogin = true) {
-                const userRef = ref(database, 'users/' + user.uid);
-                try {
-                    // 檢查用戶是否存在
-                    const snapshot = await get(userRef);
-                    const currentTime = new Date().toISOString();
-                    
-                    if (snapshot.exists()) {
-                        // 更新現有用戶資料
-                        const userData = snapshot.val();
-                        await update(userRef, {
-                            lastLogin: currentTime,
-                            loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
-                        });
-                        return {
-                            ...userData,
-                            lastLogin: currentTime,
-                            loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
-                        };
-                    } else {
-                        // 創建新用戶資料
-                        const newUserData = {
-                            name: user.displayName,
-                            email: user.email,
-                            photoURL: user.photoURL,
-                            registerTime: currentTime,
-                            lastLogin: currentTime,
-                            loginCount: 1
-                        };
-                        await set(userRef, newUserData);
-                        return newUserData;
-                    }
-                } catch (error) {
-                    console.error('更新用戶資料錯誤:', error);
-                    throw error;
-                }
-            }
+          // 更新用戶資料到資料庫
+          async function updateUserData(user, isNewLogin = true) {
+              const userRef = ref(database, 'users/' + user.uid);
+              try {
+                  // 檢查用戶是否存在
+                  const snapshot = await get(userRef);
+                  const currentTime = new Date().toISOString();
+                  
+                  if (snapshot.exists()) {
+                      // 更新現有用戶資料
+                      const userData = snapshot.val();
+                      await update(userRef, {
+                          lastLogin: currentTime,
+                          loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
+                      });
+                      return {
+                          ...userData,
+                          lastLogin: currentTime,
+                          loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
+                      };
+                  } else {
+                      // 創建新用戶資料
+                      const newUserData = {
+                          name: user.displayName,
+                          email: user.email,
+                          photoURL: user.photoURL,
+                          registerTime: currentTime,
+                          lastLogin: currentTime,
+                          loginCount: 1
+                      };
+                      await set(userRef, newUserData);
+                      return newUserData;
+                  }
+              } catch (error) {
+                  console.error('更新用戶資料錯誤:', error);
+                  throw error;
+              }
+          }
 
-            // 更新UI顯示
-            function updateUIWithUserData(userData) {
-                document.getElementById('userName').textContent = userData.name;
-                document.getElementById('userEmail').textContent = userData.email;
-                document.getElementById('userPhoto').src = userData.photoURL;
-                document.getElementById('registerTime').textContent = new Date(userData.registerTime)
-                    .toLocaleString('zh-TW');
-                document.getElementById('lastLoginTime').textContent = new Date(userData.lastLogin)
-                    .toLocaleString('zh-TW');
-                document.getElementById('loginCount').textContent = userData.loginCount;
-                document.getElementById('daysRegistered').textContent = 
-                    calculateDaysRegistered(userData.registerTime);
-            }
+          // 更新UI顯示
+          function updateUIWithUserData(userData) {
+              document.getElementById('userName').textContent = userData.name;
+              document.getElementById('userEmail').textContent = userData.email;
+              document.getElementById('userPhoto').src = userData.photoURL;
+              document.getElementById('registerTime').textContent = new Date(userData.registerTime)
+                  .toLocaleString('zh-TW');
+              document.getElementById('lastLoginTime').textContent = new Date(userData.lastLogin)
+                  .toLocaleString('zh-TW');
+              document.getElementById('loginCount').textContent = userData.loginCount;
+              document.getElementById('daysRegistered').textContent = 
+                  calculateDaysRegistered(userData.registerTime);
+          }
 
-            // Google 登入
-            googleLoginBtn.addEventListener('click', async () => {
-                toggleLoading(true);
-                try {
-                    const provider = new GoogleAuthProvider();
-                    await signInWithPopup(auth, provider);
-                    showMessage('登入成功！');
-                } catch (error) {
-                    console.error('登入錯誤:', error);
-                    showMessage('登入失敗：' + error.message, true);
-                } finally {
-                    toggleLoading(false);
-                }
-            });
+          // Google 登入
+          googleLoginBtn.addEventListener('click', async () => {
+              toggleLoading(true);
+              try {
+                  const provider = new GoogleAuthProvider();
+                  await signInWithPopup(auth, provider);
+                  showMessage('登入成功！');
+              } catch (error) {
+                  console.error('登入錯誤:', error);
+                  showMessage('登入失敗：' + error.message, true);
+              } finally {
+                  toggleLoading(false);
+              }
+          });
 
-            // 登出
-            logoutBtn.addEventListener('click', async () => {
-                try {
-                    await signOut(auth);
-                    showMessage('已成功登出！');
-                } catch (error) {
-                    showMessage('登出失敗：' + error.message, true);
-                }
-            });
+          // 登出
+          logoutBtn.addEventListener('click', async () => {
+              try {
+                  await signOut(auth);
+                  showMessage('已成功登出！');
+              } catch (error) {
+                  showMessage('登出失敗：' + error.message, true);
+              }
+          });
 
-            // 監聽認證狀態
-            onAuthStateChanged(auth, async (user) => {
-                if (user) {
-                    try {
-                        const userData = await updateUserData(user);
-                        updateUIWithUserData(userData);
-                        loginSection.style.display = 'none';
-                        userInfo.style.display = 'block';
-                    } catch (error) {
-                        showMessage('載入用戶資料失敗：' + error.message, true);
-                    }
-                } else {
-                    loginSection.style.display = 'block';
-                    userInfo.style.display = 'none';
-                }
-            });
+          // 監聽認證狀態
+          onAuthStateChanged(auth, async (user) => {
+              if (user) {
+                  try {
+                      const userData = await updateUserData(user);
+                      updateUIWithUserData(userData);
+                      loginSection.style.display = 'none';
+                      userInfo.style.display = 'block';
+                  } catch (error) {
+                      showMessage('載入用戶資料失敗：' + error.message, true);
+                  }
+              } else {
+                  loginSection.style.display = 'block';
+                  userInfo.style.display = 'none';
+              }
+          });
 
-            // 初始化成功訊息
-            showMessage('系統已就緒');
+          // 初始化成功訊息
+          showMessage('系統已就緒');
 
-        } catch (error) {
-            showMessage('系統初始化失敗：' + error.message, true);
-        }
-    </script>
+      } catch (error) {
+          showMessage('系統初始化失敗：' + error.message, true);
+      }
+  </script>
 </body>
 </html>
