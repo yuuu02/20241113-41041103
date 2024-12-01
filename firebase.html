@@ -1,325 +1,373 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-TW">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>會員系統</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .container {
             max-width: 600px;
-            margin: 40px auto;
+            margin: 0 auto;
             padding: 20px;
-            background: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
         }
-        .btn {
+        .auth-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .auth-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            border-radius: 8px;
+        }
+        .auth-methods {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            box-sizing: border-box;
+        }
+        button {
+            padding: 10px 20px;
             background-color: #4285f4;
             color: white;
-            padding: 12px 24px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-            margin: 10px 0;
-            transition: background-color 0.3s;
         }
-        .btn:hover {
-            background-color: #357abd;
+        button:hover {
+            background-color: #357ae8;
         }
-        .loading {
-            display: none;
-            margin: 20px auto;
+        .error-message {
+            color: red;
+            margin-top: 10px;
         }
-        .message {
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 4px;
+        .user-profile {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
         }
-        .error {
-            background-color: #fee;
-            color: #c00;
-        }
-        .success {
-            background-color: #efe;
-            color: #0c0;
-        }
-        #userInfo {
-            display: none;
-        }
-        .profile-section {
-            text-align: center;
-            padding: 20px 0;
-            border-bottom: 1px solid #eee;
-            margin-bottom: 20px;
-        }
-        #userPhoto {
-            width: 120px;
-            height: 120px;
+        .profile-image {
+            width: 150px;
+            height: 150px;
             border-radius: 50%;
-            margin: 10px auto;
-            display: block;
-            border: 3px solid #4285f4;
             object-fit: cover;
+            margin-bottom: 15px;
         }
         .user-details {
-            margin: 20px 0;
+            width: 100%;
+            max-width: 400px;
+            text-align: left;
         }
         .detail-item {
-            display: flex;
+            margin: 10px 0;
             padding: 10px;
-            border-bottom: 1px solid #eee;
-        }
-        .detail-label {
-            font-weight: bold;
-            width: 150px;
-            color: #666;
-        }
-        .detail-value {
-            flex: 1;
-        }
-        .stats-container {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .stat-box {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #4285f4;
-        }
-        .stat-label {
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
+            background-color: #f4f4f4;
+            border-radius: 5px;
         }
     </style>
 </head>
 <body>
-  <div class="container">
-      <div id="messageBox" class="message" style="display: none;"></div>
-      
-      <div id="loginSection">
-          <h2>會員系統</h2>
-          <button id="googleLoginBtn" class="btn">使用 Google 帳號登入</button>
-          <img src="https://media.giphy.com/media/3oEjI6SIIHBdRxXI40/giphy.gif" 
-               class="loading" id="loadingGif" alt="loading">
-      </div>
+    <div id="authContainer" class="auth-container">
+        <!-- 登入/註冊選擇畫面 -->
+        <div id="authChoiceSection">
+            <h2>會員系統</h2>
+            <div class="auth-methods">
+                <button id="showLoginBtn">會員登入</button>
+                <button id="showRegisterBtn">會員註冊</button>
+                <button id="googleSignInBtn">Google 快速登入</button>
+            </div>
+        </div>
 
-      <div id="userInfo" style="display: none;">
-          <div class="profile-section">
-              <img id="userPhoto" alt="會員照片">
-              <h2 id="userName"></h2>
-          </div>
+        <!-- 電子郵件登入區域 -->
+        <div id="loginSection" class="auth-section" style="display:none;">
+            <h3>會員登入</h3>
+            <input type="email" id="loginEmail" placeholder="電子郵件">
+            <input type="password" id="loginPassword" placeholder="密碼">
+            <button id="emailLoginBtn">登入</button>
+            <div id="loginErrorMsg" class="error-message"></div>
+        </div>
 
-          <div class="user-details">
-              <div class="detail-item">
-                  <div class="detail-label">Email</div>
-                  <div class="detail-value" id="userEmail"></div>
-              </div>
-              <div class="detail-item">
-                  <div class="detail-label">註冊時間</div>
-                  <div class="detail-value" id="registerTime"></div>
-              </div>
-              <div class="detail-item">
-                  <div class="detail-label">最後登入</div>
-                  <div class="detail-value" id="lastLoginTime"></div>
-              </div>
-          </div>
+        <!-- 電子郵件註冊區域 -->
+        <div id="registerSection" class="auth-section" style="display:none;">
+            <h3>會員註冊</h3>
+            <input type="text" id="registerName" placeholder="姓名">
+            <input type="email" id="registerEmail" placeholder="電子郵件">
+            <input type="password" id="registerPassword" placeholder="密碼">
+            <input type="password" id="confirmPassword" placeholder="確認密碼">
+            <button id="emailRegisterBtn">註冊</button>
+            <div id="registerErrorMsg" class="error-message"></div>
+        </div>
 
-          <div class="stats-container">
-              <div class="stat-box">
-                  <div class="stat-value" id="loginCount">0</div>
-                  <div class="stat-label">登入次數</div>
-              </div>
-              <div class="stat-box">
-                  <div class="stat-value" id="daysRegistered">0</div>
-                  <div class="stat-label">註冊天數</div>
-              </div>
-          </div>
+        <!-- 使用者資訊區域 -->
+        <div id="userInfoSection" style="display:none;">
+            <div class="user-profile">
+                <img id="profileImage" class="profile-image" src="" alt="個人頭像">
+                <h2 id="userName"></h2>
+                
+                <div class="user-details">
+                    <div class="detail-item">
+                        <strong>Email:</strong> 
+                        <span id="userEmail"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>最後登入時間:</strong> 
+                        <span id="lastLoginTime"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>註冊時間:</strong> 
+                        <span id="registeredTime"></span>
+                    </div>
+                    <div class="detail-item">
+                        <strong>登入次數:</strong> 
+                        <span id="loginCount"></span>
+                    </div>
+                </div>
 
-          <button id="logoutBtn" class="btn">登出</button>
-      </div>
-  </div>
+                <button id="logoutBtn" style="margin-top: 15px;">登出</button>
+            </div>
+        </div>
+    </div>
 
-  <script type="module">
-      try {
-          // 導入 Firebase 模組
-          const { initializeApp } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-app.js");
-          const { 
-              getAuth, 
-              GoogleAuthProvider, 
-              signInWithPopup,
-              onAuthStateChanged,
-              signOut
-          } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-auth.js");
-          const {
-              getDatabase,
-              ref,
-              set,
-              get,
-              update
-          } = await import("https://www.gstatic.com/firebasejs/10.7.0/firebase-database.js");
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-          // Firebase 配置
-          const firebaseConfig = {
-              apiKey: "AIzaSyD035ks3v6o625FBJC5PpkQEbh3aW80W3E",
-              authDomain: "project-5643215706914066472.firebaseapp.com",
-              databaseURL: "https://project-5643215706914066472-default-rtdb.firebaseio.com",
-              projectId: "project-5643215706914066472",
-              storageBucket: "project-5643215706914066472.firebasestorage.app",
-              messagingSenderId: "862517984626",
-              appId: "1:862517984626:web:428a18c79624f1500c71eb"
-          };
+    <script>
+        // Firebase 配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyD035ks3v6o625FBJC5PpkQEbh3aW80W3E",
+            authDomain: "project-5643215706914066472.firebaseapp.com",
+            databaseURL: "https://project-5643215706914066472-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "project-5643215706914066472",
+            storageBucket: "project-5643215706914066472.appspot.com",
+            messagingSenderId: "862517984626",
+            appId: "1:862517984626:web:428a18c79624f1500c71eb"
+        };
 
-          // 初始化 Firebase
-          const app = initializeApp(firebaseConfig);
-          const auth = getAuth(app);
-          const database = getDatabase(app);
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
 
-          // 取得 DOM 元素
-          const messageBox = document.getElementById('messageBox');
-          const loadingGif = document.getElementById('loadingGif');
-          const loginSection = document.getElementById('loginSection');
-          const userInfo = document.getElementById('userInfo');
-          const googleLoginBtn = document.getElementById('googleLoginBtn');
-          const logoutBtn = document.getElementById('logoutBtn');
+        // 取得實例
+        const auth = firebase.auth();
+        const database = firebase.database();
 
-          // 顯示訊息函數
-          function showMessage(message, isError = false) {
-              messageBox.textContent = message;
-              messageBox.className = `message ${isError ? 'error' : 'success'}`;
-              messageBox.style.display = 'block';
-              setTimeout(() => messageBox.style.display = 'none', 3000);
-          }
+        // DOM 元素
+        const authChoiceSection = document.getElementById('authChoiceSection');
+        const loginSection = document.getElementById('loginSection');
+        const registerSection = document.getElementById('registerSection');
+        const userInfoSection = document.getElementById('userInfoSection');
 
-          // 切換載入狀態
-          function toggleLoading(show) {
-              loadingGif.style.display = show ? 'block' : 'none';
-              googleLoginBtn.disabled = show;
-          }
+        // 顯示登入畫面
+        document.getElementById('showLoginBtn').addEventListener('click', () => {
+            authChoiceSection.style.display = 'none';
+            loginSection.style.display = 'block';
+        });
 
-          // 計算註冊天數
-          function calculateDaysRegistered(registerDate) {
-              const now = new Date();
-              const registered = new Date(registerDate);
-              const diffTime = Math.abs(now - registered);
-              return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          }
+        // 顯示註冊畫面
+        document.getElementById('showRegisterBtn').addEventListener('click', () => {
+            authChoiceSection.style.display = 'none';
+            registerSection.style.display = 'block';
+        });
 
-          // 更新用戶資料到資料庫
-          async function updateUserData(user, isNewLogin = true) {
-              const userRef = ref(database, 'users/' + user.uid);
-              try {
-                  // 檢查用戶是否存在
-                  const snapshot = await get(userRef);
-                  const currentTime = new Date().toISOString();
-                  
-                  if (snapshot.exists()) {
-                      // 更新現有用戶資料
-                      const userData = snapshot.val();
-                      await update(userRef, {
-                          lastLogin: currentTime,
-                          loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
-                      });
-                      return {
-                          ...userData,
-                          lastLogin: currentTime,
-                          loginCount: (userData.loginCount || 0) + (isNewLogin ? 1 : 0)
-                      };
-                  } else {
-                      // 創建新用戶資料
-                      const newUserData = {
-                          name: user.displayName,
-                          email: user.email,
-                          photoURL: user.photoURL,
-                          registerTime: currentTime,
-                          lastLogin: currentTime,
-                          loginCount: 1
-                      };
-                      await set(userRef, newUserData);
-                      return newUserData;
-                  }
-              } catch (error) {
-                  console.error('更新用戶資料錯誤:', error);
-                  throw error;
-              }
-          }
+        // 電子郵件登入
+        document.getElementById('emailLoginBtn').addEventListener('click', () => {
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const loginErrorMsg = document.getElementById('loginErrorMsg');
 
-          // 更新UI顯示
-          function updateUIWithUserData(userData) {
-              document.getElementById('userName').textContent = userData.name;
-              document.getElementById('userEmail').textContent = userData.email;
-              document.getElementById('userPhoto').src = userData.photoURL;
-              document.getElementById('registerTime').textContent = new Date(userData.registerTime)
-                  .toLocaleString('zh-TW');
-              document.getElementById('lastLoginTime').textContent = new Date(userData.lastLogin)
-                  .toLocaleString('zh-TW');
-              document.getElementById('loginCount').textContent = userData.loginCount;
-              document.getElementById('daysRegistered').textContent = 
-                  calculateDaysRegistered(userData.registerTime);
-          }
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    updateUserProfile(userCredential.user);
+                })
+                .catch((error) => {
+                    loginErrorMsg.textContent = getErrorMessage(error);
+                });
+        });
 
-          // Google 登入
-          googleLoginBtn.addEventListener('click', async () => {
-              toggleLoading(true);
-              try {
-                  const provider = new GoogleAuthProvider();
-                  await signInWithPopup(auth, provider);
-                  showMessage('登入成功！');
-              } catch (error) {
-                  console.error('登入錯誤:', error);
-                  showMessage('登入失敗：' + error.message, true);
-              } finally {
-                  toggleLoading(false);
-              }
-          });
+        // 電子郵件註冊
+        document.getElementById('emailRegisterBtn').addEventListener('click', () => {
+            const name = document.getElementById('registerName').value;
+            const email = document.getElementById('registerEmail').value;
+            const password = document.getElementById('registerPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            const registerErrorMsg = document.getElementById('registerErrorMsg');
 
-          // 登出
-          logoutBtn.addEventListener('click', async () => {
-              try {
-                  await signOut(auth);
-                  showMessage('已成功登出！');
-              } catch (error) {
-                  showMessage('登出失敗：' + error.message, true);
-              }
-          });
+            // 檢查密碼是否一致
+            if (password !== confirmPassword) {
+                registerErrorMsg.textContent = '密碼與確認密碼不符';
+                return;
+            }
 
-          // 監聽認證狀態
-          onAuthStateChanged(auth, async (user) => {
-              if (user) {
-                  try {
-                      const userData = await updateUserData(user);
-                      updateUIWithUserData(userData);
-                      loginSection.style.display = 'none';
-                      userInfo.style.display = 'block';
-                  } catch (error) {
-                      showMessage('載入用戶資料失敗：' + error.message, true);
-                  }
-              } else {
-                  loginSection.style.display = 'block';
-                  userInfo.style.display = 'none';
-              }
-          });
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    const user = userCredential.user;
+                    // 更新使用者名稱
+                    return user.updateProfile({ 
+                        displayName: name,
+                        photoURL: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=random`
+                    }).then(() => user);
+                })
+                .then((user) => {
+                    // 在資料庫中建立使用者資料
+                    const registrationTime = new Date().toISOString();
+                    return database.ref('users/' + user.uid).set({
+                        name: name,
+                        email: email,
+                        registrationTime: registrationTime,
+                        loginCount: 1,
+                        lastLoginTime: registrationTime
+                    }).then(() => user);
+                })
+                .then((user) => {
+                    updateUserProfile(user);
+                })
+                .catch((error) => {
+                    registerErrorMsg.textContent = getErrorMessage(error);
+                });
+        });
 
-          // 初始化成功訊息
-          showMessage('系統已就緒');
+        // Google 快速登入
+        document.getElementById('googleSignInBtn').addEventListener('click', () => {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    const user = result.user;
+                    updateUserProfileWithDatabase(user);
+                })
+                .catch((error) => {
+                    console.error('Google 登入錯誤:', error);
+                });
+        });
 
-      } catch (error) {
-          showMessage('系統初始化失敗：' + error.message, true);
-      }
-  </script>
+        // 登出
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            auth.signOut()
+                .then(() => {
+                    updateUIForLoggedOut();
+                })
+                .catch((error) => {
+                    console.error('登出錯誤:', error);
+                });
+        });
+
+        // 更新使用者資料庫資訊
+        function updateUserProfileWithDatabase(user) {
+            const userRef = database.ref('users/' + user.uid);
+            const currentTime = new Date().toISOString();
+
+            userRef.once('value').then((snapshot) => {
+                const userData = snapshot.val() || {};
+                const loginCount = (userData.loginCount || 0) + 1;
+                
+                // 更新資料庫資訊
+                return userRef.update({
+                    name: user.displayName,
+                    email: user.email,
+                    profilePicture: user.photoURL,
+                    loginCount: loginCount,
+                    lastLoginTime: currentTime,
+                    registrationTime: userData.registrationTime || currentTime
+                });
+            }).then(() => {
+                updateUserProfile(user);
+            }).catch((error) => {
+                console.error('更新使用者資料錯誤:', error);
+            });
+        }
+
+        // 更新使用者介面
+        function updateUserProfile(user) {
+            // 取得使用者資料庫資訊
+            const userRef = database.ref('users/' + user.uid);
+            userRef.once('value').then((snapshot) => {
+                const userData = snapshot.val() || {};
+
+                // 更新頭像
+                const profileImage = document.getElementById('profileImage');
+                profileImage.src = user.photoURL || 
+                    `https://ui-avatars.com/api/?name=${encodeURIComponent(user.displayName)}&background=random`;
+
+                // 更新使用者資訊
+                document.getElementById('userName').textContent = user.displayName || '使用者';
+                document.getElementById('userEmail').textContent = user.email;
+                
+                // 格式化時間
+                const formatDate = (dateString) => {
+                    return new Date(dateString).toLocaleString('zh-TW', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                    });
+                };
+
+                // 顯示最後登入時間
+                document.getElementById('lastLoginTime').textContent = 
+                    formatDate(userData.lastLoginTime || new Date());
+
+                // 顯示註冊時間
+                document.getElementById('registeredTime').textContent = 
+                    formatDate(userData.registrationTime || new Date());
+
+                // 顯示登入次數
+                document.getElementById('loginCount').textContent = 
+                    (userData.loginCount || 1) + ' 次';
+
+                // 隱藏其他畫面
+                authChoiceSection.style.display = 'none';
+                loginSection.style.display = 'none';
+                registerSection.style.display = 'none';
+                
+                // 顯示使用者資訊
+                userInfoSection.style.display = 'block';
+            });
+        }
+
+        // 錯誤訊息處理（保持不變）
+        function getErrorMessage(error) {
+            switch (error.code) {
+                case 'auth/email-already-in-use':
+                    return '此電子郵件已被使用';
+                case 'auth/invalid-email':
+                    return '電子郵件格式不正確';
+                case 'auth/weak-password':
+                    return '密碼強度不足';
+                case 'auth/wrong-password':
+                    return '密碼錯誤';
+                case 'auth/user-not-found':
+                    return '使用者不存在';
+                default:
+                    return error.message;
+            }
+        }
+
+        // 更新介面為未登入狀態
+        function updateUIForLoggedOut() {
+            authChoiceSection.style.display = 'block';
+            loginSection.style.display = 'none';
+            registerSection.style.display = 'none';
+            userInfoSection.style.display = 'none';
+        }
+
+        // 監聽使用者狀態變化
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                updateUserProfileWithDatabase(user);
+            } else {
+                updateUIForLoggedOut();
+            }
+        });
+    </script>
 </body>
 </html>
