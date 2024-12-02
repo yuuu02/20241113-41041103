@@ -125,7 +125,7 @@
                 messagingSenderId: "862517984626",
                 appId: "1:862517984626:web:428a18c79624f1500c71eb"
             };
-
+            attachEventListeners();
             // 初始化 Firebase
             firebase.initializeApp(firebaseConfig);
 
@@ -141,23 +141,65 @@
 
             // 更新顯示/隱藏邏輯
             function showSection(section) {
+                // 先隱藏所有區段
                 [authChoiceSection, loginSection, registerSection, userInfoSection].forEach(el => {
-                    el.classList.add('hidden');
+                    el.style.display = 'none';
                 });
-                section.classList.remove('hidden');
+
+                // 顯示指定區段
+                section.style.display = 'block';
+
+                console.log('顯示區段:', section.id);
             }
 
-            // 事件監聽器
+            // 顯示登入畫面
             document.getElementById('showLoginBtn').addEventListener('click', () => {
-                console.log('顯示登入畫面');
+                console.log('showLoginBtn 被點擊');
                 showSection(loginSection);
             });
 
+            // 顯示註冊畫面
             document.getElementById('showRegisterBtn').addEventListener('click', () => {
-                console.log('顯示註冊畫面');
+                console.log('showRegisterBtn 被點擊');
                 showSection(registerSection);
             });
+            // 為登入輸入框添加 Enter 鍵事件監聽器
+            document.getElementById('loginEmail').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    document.getElementById('emailLoginBtn').click();
+                }
+            });
 
+            document.getElementById('loginPassword').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    document.getElementById('emailLoginBtn').click();
+                }
+            });
+
+            // 為註冊輸入框添加 Enter 鍵事件監聽器
+            document.getElementById('registerName').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    document.getElementById('emailRegisterBtn').click();
+                }
+            });
+
+            document.getElementById('registerEmail').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    document.getElementById('emailRegisterBtn').click();
+                }
+            });
+
+            document.getElementById('registerPassword').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    document.getElementById('emailRegisterBtn').click();
+                }
+            });
+
+            document.getElementById('confirmPassword').addEventListener('keypress', function(event) {
+                if (event.key === 'Enter') {
+                    document.getElementById('emailRegisterBtn').click();
+                }
+            });
             // 電子郵件登入
             document.getElementById('emailLoginBtn').addEventListener('click', () => {
                 const email = document.getElementById('loginEmail').value;
@@ -176,6 +218,34 @@
                         loginErrorMsg.textContent = getErrorMessage(error);
                     });
             });
+            // 檢查事件是否正確綁定的測試函數
+            function attachEventListeners() {
+                const showLoginBtn = document.getElementById('showLoginBtn');
+                const showRegisterBtn = document.getElementById('showRegisterBtn');
+                const emailLoginBtn = document.getElementById('emailLoginBtn');
+                const emailRegisterBtn = document.getElementById('emailRegisterBtn');
+
+                console.log('檢查按鈕元素：', {
+                    showLoginBtn: !!showLoginBtn,
+                    showRegisterBtn: !!showRegisterBtn,
+                    emailLoginBtn: !!emailLoginBtn,
+                    emailRegisterBtn: !!emailRegisterBtn
+                });
+
+                if (showLoginBtn) {
+                    showLoginBtn.addEventListener('click', () => {
+                        console.log('showLoginBtn 被點擊 (重新綁定)');
+                        showSection(loginSection);
+                    });
+                }
+
+                if (showRegisterBtn) {
+                    showRegisterBtn.addEventListener('click', () => {
+                        console.log('showRegisterBtn 被點擊 (重新綁定)');
+                        showSection(registerSection);
+                    });
+                }
+            }
 
             // 電子郵件註冊
             document.getElementById('emailRegisterBtn').addEventListener('click', () => {
